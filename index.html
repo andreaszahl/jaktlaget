@@ -178,35 +178,33 @@
   });
 
     // display Carto basemap tiles with light features and labels
-  var light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
-  });
-
   var topo = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
     attribution: '&copy; <a href="http://www.kartverket.no/">Kartverket</a>'
   }).addTo(map);
 
   var controlLayers = L.control.layers().addTo(map);
-  controlLayers.addBaseLayer(light, 'Carto Light');
   controlLayers.addBaseLayer(topo, 'Kartverket Topo');
 
   // Hunting stand markers
-  var standIcon = L.divIcon({
-    className: 'stand-icon',
-    html: '<svg viewBox="0 0 20 20" width="14" height="14" fill="white" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,14 2,14"/><rect x="8" y="14" width="4" height="4"/></svg>',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -18]
-  });
+  function numberedStandIcon(n) {
+    return L.divIcon({
+      className: 'stand-icon',
+      html: '<span style="color:white;font-size:13px;font-weight:700;line-height:30px;">' + n + '</span>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -18]
+    });
+  }
 
   Papa.parse('poster.csv', {
     download: true,
     header: true,
     complete: function(results) {
       var stands = L.layerGroup();
+      var n = 1;
       results.data.forEach(function(row) {
         if (row.Latitude && row.Longitude) {
-          L.marker([parseFloat(row.Latitude), parseFloat(row.Longitude)], { icon: standIcon })
+          L.marker([parseFloat(row.Latitude), parseFloat(row.Longitude)], { icon: numberedStandIcon(n++) })
             .bindPopup('<b>' + row.Navn + '</b>')
             .addTo(stands);
         }
@@ -253,7 +251,6 @@
           markers.addLayer(marker);
         }
       });
-      markers.addTo(map);
       controlLayers.addOverlay(markers, 'Fellinger');
     }
   });
