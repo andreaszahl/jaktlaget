@@ -1,0 +1,25 @@
+# Environment variables - never commit these
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Generated at deploy time — never commit
+public/config.js
+
+# Local dev credentials — never commit
+public/config.local.js

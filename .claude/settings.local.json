@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv statistikk.html public/)",
+      "Bash(mv weatherService.js public/)",
+      "Bash(mv data.csv public/)",
+      "Bash(rm index.html poster.csv)"
+    ]
+  }
+}

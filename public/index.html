@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Fellingskart Sund Jaktfelt</title>
+  <title>Sund Jaktfelt</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="utf-8">
 
-  <!-- Load Leaflet code library - see updates at http://leafletjs.com/download.html -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
-  <!-- Load jQuery and PapaParse to read data from a CSV file -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.local.js"></script>
+  <script src="supabaseClient.js"></script>
   <script src="weatherService.js"></script>
 
-  <!-- Position the map with Cascading Style Sheet (CSS) -->
   <style>
     body { margin:0; padding:0; }
     #map { position: absolute; top:0; bottom:0; right:0; left:0; }
@@ -110,12 +109,31 @@
       justify-content: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
-  </style>
 
+    #toast {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: #2d7a2d;
+      color: white;
+      padding: 8px 22px;
+      border-radius: 20px;
+      font-family: sans-serif;
+      font-size: 13px;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Insert HTML division tag to layout the map -->
   <div id="map"></div>
 
   <!-- Weather panel -->
@@ -137,6 +155,8 @@
     </div>
     <div id="weather-error" style="display:none">Vær utilgjengelig</div>
   </div>
+
+  <div id="toast"></div>
 
   <!-- Sidebar menu -->
   <div id="sidebar">
@@ -166,18 +186,15 @@
     </div>
   </div>
 
-  <!-- Insert Javascript (.js) code to create the map -->
   <script>
 
-  // Set up initial map center and zoom level
   var map = L.map('map', {
-    center: [65.24, 12.10], // EDIT latitude, longitude to re-center map
-    zoom: 13,  // EDIT from 1 to 18 -- decrease to zoom out, increase to zoom in
+    center: [65.24, 12.10],
+    zoom: 13,
     scrollWheelZoom: true,
     tap: false
   });
 
-    // display Carto basemap tiles with light features and labels
   var topo = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
     attribution: '&copy; <a href="http://www.kartverket.no/">Kartverket</a>'
   }).addTo(map);
@@ -185,7 +202,16 @@
   var controlLayers = L.control.layers().addTo(map);
   controlLayers.addBaseLayer(topo, 'Kartverket Topo');
 
-  // Hunting stand markers
+  // --- Toast notification ---
+  function showToast(msg, isError) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.background = isError ? '#c0392b' : '#2d7a2d';
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 2500);
+  }
+
+  // --- Poster markers (draggable, loaded from API) ---
   function numberedStandIcon(n) {
     return L.divIcon({
       className: 'stand-icon',
@@ -196,25 +222,63 @@
     });
   }
 
-  Papa.parse('poster.csv', {
-    download: true,
-    header: true,
-    complete: function(results) {
-      var stands = L.layerGroup();
-      var n = 1;
-      results.data.forEach(function(row) {
-        if (row.Latitude && row.Longitude) {
-          L.marker([parseFloat(row.Latitude), parseFloat(row.Longitude)], { icon: numberedStandIcon(n++) })
-            .bindPopup('<b>' + row.Navn + '</b>')
-            .addTo(stands);
-        }
+  function saveMarkerPosition(id, latlng) {
+    return db.from('markers')
+      .update({ lat: latlng.lat, lon: latlng.lng })
+      .eq('id', id)
+      .then(function(res) {
+        if (res.error) throw new Error(res.error.message);
       });
-      stands.addTo(map);
-      controlLayers.addOverlay(stands, 'Poster');
+  }
+
+  var lastMove = null;
+
+  db.from('markers').select('*').then(function(res) {
+    if (res.error) {
+      showToast('Feil: kunne ikke laste poster', true);
+      return;
+    }
+    var stands = L.layerGroup();
+    res.data.forEach(function(row) {
+      var marker = L.marker([parseFloat(row.lat), parseFloat(row.lon)], {
+        icon: numberedStandIcon(row.id),
+        draggable: true
+      });
+      marker.bindPopup('<b>' + row.name + '</b>');
+
+      marker.on('dragstart', function() {
+        lastMove = { marker: marker, id: row.id, prevLatLng: marker.getLatLng() };
+      });
+
+      marker.on('dragend', function() {
+        var newLatLng = marker.getLatLng();
+        var prev = lastMove ? lastMove.prevLatLng : null;
+        saveMarkerPosition(row.id, newLatLng)
+          .then(function() { showToast('Lagret', false); })
+          .catch(function() { showToast('Feil: kunne ikke lagre', true); });
+        lastMove = { marker: marker, id: row.id, prevLatLng: prev };
+      });
+
+      marker.addTo(stands);
+    });
+    stands.addTo(map);
+    controlLayers.addOverlay(stands, 'Poster');
+  });
+
+  // Ctrl+Z: undo last marker move
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && lastMove) {
+      var m = lastMove;
+      lastMove = null;
+      m.marker.setLatLng(m.prevLatLng);
+      saveMarkerPosition(m.id, m.prevLatLng)
+        .then(function() { showToast('Angret', false); })
+        .catch(function() { showToast('Feil: kunne ikke angre', true); });
+
     }
   });
 
-  // Weather panel
+  // --- Weather panel ---
   function updateWeather() {
     var center = map.getCenter();
     WeatherService.fetch(center.lat, center.lng, function(err, data) {
@@ -238,7 +302,7 @@
   updateWeather();
   map.on('moveend', updateWeather);
 
-  // Load markers from data.csv
+  // --- Fellinger markers (read-only, from data.csv) ---
   Papa.parse('data.csv', {
     download: true,
     header: true,
