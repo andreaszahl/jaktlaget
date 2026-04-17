@@ -15,74 +15,155 @@
   <script src="weatherService.js"></script>
 
   <style>
-    body { margin:0; padding:0; }
-    #map { position: absolute; top:0; bottom:0; right:0; left:0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    #sidebar {
-      position: absolute;
-      top: 0; left: 0; bottom: 0;
-      width: 42px;
-      background: #fff;
-      z-index: 1000;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
       overflow: hidden;
-      transition: width 0.25s ease;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.18);
-      font-family: sans-serif;
     }
-    #sidebar:hover { width: 210px; }
 
-    .sidebar-header {
+    /* ── Header ── */
+    #header {
+      flex-shrink: 0;
+      background: #2a3a2e;
+      padding: 0 20px;
+      height: 48px;
       display: flex;
       align-items: center;
-      padding: 11px 12px;
-      border-bottom: 1px solid #e8e8e8;
-      white-space: nowrap;
+      justify-content: space-between;
     }
-    .sidebar-hamburger { font-size: 20px; flex-shrink: 0; color: #444; }
-    .sidebar-title {
-      margin-left: 13px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .header-app-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #user-greeting {
       font-size: 13px;
-      font-weight: 600;
-      color: #222;
-      opacity: 0;
-      transition: opacity 0.15s;
+      color: #a8c090;
     }
-    #sidebar:hover .sidebar-title { opacity: 1; }
 
-    .menu-section { padding: 5px 0; }
-    .menu-section + .menu-section { border-top: 1px solid #e8e8e8; }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 12px;
-      text-decoration: none;
-      color: #333;
-      white-space: nowrap;
+    #logout-btn {
+      background: rgba(255,255,255,0.08);
+      border: 0.5px solid rgba(255,255,255,0.2);
+      color: #ffffff;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
       cursor: pointer;
-      user-select: none;
+      font-family: inherit;
+      transition: background 0.15s;
     }
-    .menu-item:hover { background: #f2f2f2; }
-    .menu-item.active { background: #eef4ff; color: #1a56db; font-weight: 600; }
-    .menu-icon { font-size: 16px; width: 18px; text-align: center; flex-shrink: 0; }
-    .menu-label {
-      margin-left: 13px;
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-    #sidebar:hover .menu-label { opacity: 1; }
+    #logout-btn:hover { background: rgba(255,255,255,0.16); }
 
+    /* ── App row: sidebar + map ── */
+    #app-row {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 190px;
+      flex-shrink: 0;
+      background: #f5f3ee;
+      border-right: 0.5px solid #d0cec8;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sidebar-top { flex: 1; }
+
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #2a3a2e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-section-label.mt { margin-top: 1.25rem; }
+
+    .sidebar-item {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .sidebar-item.active {
+      background: #2a3a2e;
+      color: #ffffff;
+    }
+
+    .sidebar-item.inactive {
+      background: transparent;
+      color: #3a4e3e;
+    }
+    .sidebar-item.inactive:hover { background: rgba(42,58,46,0.08); }
+
+    .sidebar-footer {
+      border-top: 0.5px solid #d0cec8;
+      padding-top: 10px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* ── Map wrapper ── */
+    #map-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ── Weather panel ── */
     #weather-panel {
       position: absolute;
       bottom: 28px;
-      left: 52px;
+      left: 10px;
       z-index: 1000;
       background: rgba(255,255,255,0.93);
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.18);
       padding: 10px 14px;
-      font-family: sans-serif;
       font-size: 13px;
       color: #222;
       min-width: 150px;
@@ -100,6 +181,7 @@
     #weather-panel .muted { color: #666; }
     #weather-error, #weather-loading { color: #888; font-style: italic; font-size: 12px; }
 
+    /* ── Stand icons ── */
     .stand-icon {
       background: #2d7a2d;
       border: 2.5px solid #fff;
@@ -110,6 +192,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
 
+    /* ── Toast ── */
     #toast {
       position: absolute;
       bottom: 80px;
@@ -119,7 +202,6 @@
       color: white;
       padding: 8px 22px;
       border-radius: 20px;
-      font-family: sans-serif;
       font-size: 13px;
       z-index: 2000;
       opacity: 0;
@@ -130,85 +212,81 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
-
-    #logout-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1001;
-      padding: 6px 14px;
-      background: rgba(255,255,255,0.93);
-      border: none;
-      border-radius: 5px;
-      font-family: sans-serif;
-      font-size: 13px;
-      color: #333;
-      cursor: pointer;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.2);
-    }
-    #logout-btn:hover { background: #f2f2f2; }
   </style>
 </head>
 <body>
 
-  <div id="map"></div>
-
-  <!-- Weather panel -->
-  <div id="weather-panel">
-    <div id="weather-loading">Laster vær...</div>
-    <div id="weather-data" style="display:none">
-      <div class="weather-row">
-        <span class="weather-temp"><span id="weather-temp"></span>°C</span>
+  <!-- Header bar -->
+  <div id="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg width="16" height="19" viewBox="0 0 22 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 1C6.58 1 3 4.58 3 9c0 6 8 16 8 16s8-10 8-16c0-4.42-3.58-8-8-8z" stroke="#a8c090" stroke-width="1.5" fill="none"/>
+          <circle cx="11" cy="9" r="3" fill="#2a3a2e" stroke="#a8c090" stroke-width="1.5"/>
+        </svg>
       </div>
-      <div class="weather-row">
-        <span class="weather-arrow" id="weather-wind-arrow"></span>
-        <span id="weather-wind-speed"></span> m/s
-        <span class="muted" id="weather-wind-dir"></span>
-      </div>
-      <div class="weather-row">
-        <span class="muted">Nedbør:</span>
-        <span id="weather-precip"></span> mm
-      </div>
+      <span class="header-app-name">Jaktlaget</span>
     </div>
-    <div id="weather-error" style="display:none">Vær utilgjengelig</div>
+    <div class="header-right">
+      <span id="user-greeting"></span>
+      <button id="logout-btn">Logg ut</button>
+    </div>
   </div>
 
-  <div id="toast"></div>
+  <!-- App row -->
+  <div id="app-row">
 
-  <button id="logout-btn">Logg ut</button>
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-section-label">Kartlag</div>
+        <span class="sidebar-item active">Kartverket terreng</span>
 
-  <!-- Sidebar menu -->
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <span class="sidebar-hamburger">&#9776;</span>
-      <span class="sidebar-title">Sund Jaktfelt</span>
+        <div class="sidebar-section-label mt">Navigasjon</div>
+        <a class="sidebar-item active" href="index.html">Jaktplanlegging</a>
+        <a class="sidebar-item inactive" href="statistikk.html">Statistikk</a>
+      </div>
+      <div class="sidebar-footer">Sund Jaktfelt</div>
     </div>
-    <div class="menu-section">
-      <a class="menu-item active" href="index.html">
-        <span class="menu-icon">🗺️</span>
-        <span class="menu-label">Kartlag</span>
-      </a>
-      <a class="menu-item" href="#">
-        <span class="menu-icon">📍</span>
-        <span class="menu-label">Fellinger</span>
-      </a>
+
+    <!-- Map wrapper -->
+    <div id="map-wrapper">
+      <div id="map"></div>
+
+      <!-- Weather panel -->
+      <div id="weather-panel">
+        <div id="weather-loading">Laster vær...</div>
+        <div id="weather-data" style="display:none">
+          <div class="weather-row">
+            <span class="weather-temp"><span id="weather-temp"></span>°C</span>
+          </div>
+          <div class="weather-row">
+            <span class="weather-arrow" id="weather-wind-arrow"></span>
+            <span id="weather-wind-speed"></span> m/s
+            <span class="muted" id="weather-wind-dir"></span>
+          </div>
+          <div class="weather-row">
+            <span class="muted">Nedbør:</span>
+            <span id="weather-precip"></span> mm
+          </div>
+        </div>
+        <div id="weather-error" style="display:none">Vær utilgjengelig</div>
+      </div>
+
+      <div id="toast"></div>
     </div>
-    <div class="menu-section">
-      <a class="menu-item" href="statistikk.html">
-        <span class="menu-icon">📊</span>
-        <span class="menu-label">Statistikk</span>
-      </a>
-      <a class="menu-item" href="#">
-        <span class="menu-icon">⚙️</span>
-        <span class="menu-label">Innstillinger</span>
-      </a>
-    </div>
-  </div>
+
+  </div><!-- end #app-row -->
 
   <script>
 
   (async function() {
   await requireAuth();
+
+  // Show logged-in user email in header
+  var session = await db.auth.getSession();
+  var userEmail = (session.data.session && session.data.session.user && session.data.session.user.email) ? session.data.session.user.email : '';
+  document.getElementById('user-greeting').textContent = 'Hei, ' + userEmail;
 
   document.getElementById('logout-btn').addEventListener('click', async function() {
     await db.auth.signOut();
@@ -301,7 +379,6 @@
       saveMarkerPosition(m.id, m.prevLatLng)
         .then(function() { showToast('Angret', false); })
         .catch(function() { showToast('Feil: kunne ikke angre', true); });
-
     }
   });
 

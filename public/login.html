@@ -1,84 +1,226 @@
 <!DOCTYPE html>
-<html>
+<html lang="no">
 <head>
-  <title>Logg inn – Sund Jaktfelt</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta charset="utf-8">
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="config.js"></script>
-  <script src="supabaseClient.js"></script>
-
+  <title>Jaktlaget – Logg inn</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: sans-serif;
-      background: #f7f7f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #2a3a2e;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
     }
-    .login-card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
-      padding: 40px 36px;
-      width: 340px;
+
+    /* Topographic SVG overlay */
+    #topo-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.18;
+      pointer-events: none;
     }
-    h1 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
-    .subtitle { font-size: 13px; color: #888; margin-bottom: 28px; }
-    label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
+
+    /* Login card */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: #ffffff;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 360px;
+      padding: 2rem 2.5rem;
+    }
+
+    /* Card header */
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .icon-circle {
+      width: 44px;
+      height: 44px;
+      background: #2a3a2e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .app-name {
+      font-size: 22px;
+      font-weight: 500;
+      color: #2a3a2e;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+    }
+
+    /* Form */
+    .field { margin-bottom: 1rem; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
     input {
       width: 100%;
-      padding: 9px 12px;
+      padding: 10px 12px;
+      border: 0.5px solid #ccc;
+      border-radius: 8px;
       font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      background: #fafafa;
       outline: none;
-      margin-bottom: 16px;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    input:focus { border-color: #2d7a2d; }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #2d7a2d;
-      color: white;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    input:focus {
+      border-color: #2a3a2e;
+      box-shadow: 0 0 0 3px rgba(42,58,46,0.12);
     }
-    button:disabled { background: #7aaa7a; cursor: not-allowed; }
+
+    /* Error message */
     #error-msg {
       display: none;
-      margin-top: 14px;
-      padding: 9px 12px;
-      background: #fdecea;
-      color: #c0392b;
-      border-radius: 5px;
       font-size: 13px;
+      color: #c0392b;
+      text-align: center;
+      margin-bottom: 0.85rem;
+    }
+
+    /* Login button */
+    button {
+      width: 100%;
+      padding: 11px;
+      background: #2a3a2e;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #3a4e3e; }
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    /* Footer */
+    .footer-note {
+      margin-top: 1.25rem;
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="login-card">
-    <h1>Sund Jaktfelt</h1>
-    <p class="subtitle">Logg inn for å fortsette</p>
-    <label for="email">E-post</label>
-    <input type="email" id="email" placeholder="navn@example.com" autocomplete="email">
-    <label for="password">Passord</label>
-    <input type="password" id="password" autocomplete="current-password">
+
+  <!-- Topographic background -->
+  <svg id="topo-bg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <!-- Grid lines -->
+    <g stroke="#a8c090" stroke-width="0.5" fill="none">
+      <line x1="0" y1="50"  x2="1000" y2="50"/>
+      <line x1="0" y1="100" x2="1000" y2="100"/>
+      <line x1="0" y1="150" x2="1000" y2="150"/>
+      <line x1="0" y1="200" x2="1000" y2="200"/>
+      <line x1="0" y1="250" x2="1000" y2="250"/>
+      <line x1="0" y1="300" x2="1000" y2="300"/>
+      <line x1="0" y1="350" x2="1000" y2="350"/>
+      <line x1="0" y1="400" x2="1000" y2="400"/>
+      <line x1="0" y1="450" x2="1000" y2="450"/>
+      <line x1="0" y1="500" x2="1000" y2="500"/>
+      <line x1="0" y1="550" x2="1000" y2="550"/>
+      <line x1="50"  y1="0" x2="50"  y2="600"/>
+      <line x1="100" y1="0" x2="100" y2="600"/>
+      <line x1="150" y1="0" x2="150" y2="600"/>
+      <line x1="200" y1="0" x2="200" y2="600"/>
+      <line x1="250" y1="0" x2="250" y2="600"/>
+      <line x1="300" y1="0" x2="300" y2="600"/>
+      <line x1="350" y1="0" x2="350" y2="600"/>
+      <line x1="400" y1="0" x2="400" y2="600"/>
+      <line x1="450" y1="0" x2="450" y2="600"/>
+      <line x1="500" y1="0" x2="500" y2="600"/>
+      <line x1="550" y1="0" x2="550" y2="600"/>
+      <line x1="600" y1="0" x2="600" y2="600"/>
+      <line x1="650" y1="0" x2="650" y2="600"/>
+      <line x1="700" y1="0" x2="700" y2="600"/>
+      <line x1="750" y1="0" x2="750" y2="600"/>
+      <line x1="800" y1="0" x2="800" y2="600"/>
+      <line x1="850" y1="0" x2="850" y2="600"/>
+      <line x1="900" y1="0" x2="900" y2="600"/>
+      <line x1="950" y1="0" x2="950" y2="600"/>
+    </g>
+    <!-- Contour lines -->
+    <g stroke="#7aaa60" stroke-width="1.2" fill="none">
+      <path d="M0,420 C80,380 160,440 280,400 C400,360 480,420 600,390 C720,360 820,410 1000,380"/>
+      <path d="M0,300 C100,260 200,320 350,280 C500,240 580,310 720,270 C860,230 920,290 1000,260"/>
+      <path d="M0,160 C120,130 240,190 380,150 C520,110 640,180 780,140 C880,110 940,160 1000,130"/>
+    </g>
+    <!-- Map marker dots with labels -->
+    <g fill="#c8e0a0" font-family="sans-serif" font-size="11">
+      <circle cx="220" cy="310" r="5"/>
+      <text x="230" y="314" fill="#c8e0a0">P1</text>
+      <circle cx="560" cy="185" r="5"/>
+      <text x="570" y="189" fill="#c8e0a0">P2</text>
+      <circle cx="800" cy="390" r="5"/>
+      <text x="810" y="394" fill="#c8e0a0">P3</text>
+    </g>
+  </svg>
+
+  <!-- Login card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon-circle">
+        <!-- Location pin SVG -->
+        <svg width="22" height="26" viewBox="0 0 22 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 1C6.58 1 3 4.58 3 9c0 6 8 16 8 16s8-10 8-16c0-4.42-3.58-8-8-8z" stroke="#a8c090" stroke-width="1.5" fill="none"/>
+          <circle cx="11" cy="9" r="3" fill="#2a3a2e" stroke="#a8c090" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="app-name">Jaktlaget</div>
+      <div class="subtitle">Logg inn for å fortsette</div>
+    </div>
+
+    <div class="field">
+      <label for="email">E-post</label>
+      <input type="email" id="email" placeholder="navn@eksempel.no" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="password">Passord</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <div id="error-msg">Feil e-post eller passord. Prøv igjen.</div>
+
     <button id="login-btn">Logg inn</button>
-    <div id="error-msg">Feil e-post eller passord</div>
+
+    <p class="footer-note">Kontakt jaktleder for tilgang</p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
   <script>
     var btn = document.getElementById('login-btn');
     var errorMsg = document.getElementById('error-msg');
 
-    // Redirect to map if already logged in
+    // Skip login if already authenticated
     db.auth.getSession().then(function(res) {
       if (res.data.session) window.location.href = 'index.html';
     });
@@ -89,7 +231,7 @@
       if (!email || !password) return;
 
       btn.disabled = true;
-      btn.textContent = 'Logger inn...';
+      btn.textContent = 'Logger inn…';
       errorMsg.style.display = 'none';
 
       var res = await db.auth.signInWithPassword({ email: email, password: password });
