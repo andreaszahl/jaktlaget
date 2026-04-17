@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Logg inn – Sund Jaktfelt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="supabaseClient.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+      padding: 40px 36px;
+      width: 340px;
+    }
+    h1 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #888; margin-bottom: 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      outline: none;
+      margin-bottom: 16px;
+    }
+    input:focus { border-color: #2d7a2d; }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #2d7a2d;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:disabled { background: #7aaa7a; cursor: not-allowed; }
+    #error-msg {
+      display: none;
+      margin-top: 14px;
+      padding: 9px 12px;
+      background: #fdecea;
+      color: #c0392b;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Sund Jaktfelt</h1>
+    <p class="subtitle">Logg inn for å fortsette</p>
+    <label for="email">E-post</label>
+    <input type="email" id="email" placeholder="navn@example.com" autocomplete="email">
+    <label for="password">Passord</label>
+    <input type="password" id="password" autocomplete="current-password">
+    <button id="login-btn">Logg inn</button>
+    <div id="error-msg">Feil e-post eller passord</div>
+  </div>
+
+  <script>
+    var btn = document.getElementById('login-btn');
+    var errorMsg = document.getElementById('error-msg');
+
+    // Redirect to map if already logged in
+    db.auth.getSession().then(function(res) {
+      if (res.data.session) window.location.href = 'index.html';
+    });
+
+    async function login() {
+      var email = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
+      if (!email || !password) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Logger inn...';
+      errorMsg.style.display = 'none';
+
+      var res = await db.auth.signInWithPassword({ email: email, password: password });
+      if (res.error) {
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Logg inn';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+    btn.addEventListener('click', login);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>

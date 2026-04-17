@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
   <script src="supabaseClient.js"></script>
+  <script src="auth.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -162,6 +163,9 @@
   </div>
 
   <script>
+  (async function() {
+    await requireAuth();
+
     var allRows = [];
 
     $('#table-body').html('<tr><td class="no-results" colspan="4">Laster...</td></tr>');
@@ -213,6 +217,7 @@
       });
       renderTable(filtered);
     });
+  })(); // end requireAuth IIFE
   </script>
 </body>
 </html>
